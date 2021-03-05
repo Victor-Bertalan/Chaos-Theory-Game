@@ -1,0 +1,86 @@
+library(shiny)
+library(ggplot2)
+ui <- fluidPage(
+
+    titlePanel("Chaos Theory Game 2D"),
+
+    sidebarLayout(
+        sidebarPanel(
+            sliderInput('sampleSize', 'Puncte Generate', 
+                                 min=1, max=10000,
+                                 value=100, 
+                                 step=100, round=0),
+            
+            sliderInput('startSize', 'Puncte Initiale', 
+                                 min=3, max=10,
+                                 value=3, 
+                                 step=1, round=0),
+            sliderInput('ratio', 'Ratia', 
+                                 min=0, max=1,
+                                 value=0.5, 
+                                 step=0.01, round=0),
+            sliderInput('grade', 'Rotatie', 
+                        min=0, max=90,
+                        value=0, 
+                        step=1, round=0)
+            ),
+
+        mainPanel(plotOutput("plot"))
+    )
+)
+
+
+server <- function(input, output) {
+    
+    
+    chaosGame<-reactive({
+    nrStart<-input$startSize
+    #se generaza un poligon regulat cun nrStart puncte
+    x=c()
+    for(i in 1:nrStart) x[i]<-100*cos(2*i*pi/nrStart)
+    y=c()
+    for(i in 1:nrStart) y[i]<-100*sin(2*i*pi/nrStart)
+    cul=c()
+    for(i in 1:nrStart) cul[i]<-i+1
+    
+    #se alege un punct random din interiorul poligonului
+    sumx<-0
+    sumy<-0
+    for(i in 1:nrStart)
+    {
+     sumx<-sumx+runif(1,0,1)*x[i]
+     sumy<-sumy+runif(1,0,1)*y[i]
+    }
+    x[nrStart+1]=sumx/nrStart
+    y[nrStart+1]=sumy/nrStart
+    cul[nrStart+1]=1
+    
+    #chaos theory game
+    nrPct=input$sampleSize+nrStart+1
+    for (i in (nrStart+2):nrPct)
+    {
+        randNr=sample(1:nrStart,1)
+        
+        xc<-(x[i-1]+x[randNr])*input$ratio
+        yc<-(y[i-1]+y[randNr])*input$ratio
+        angle<-input$grade*pi/180
+        xs<-xc-x[i-1]
+        ys<-yc-y[i-1]
+        x[i]<-xs*cos(angle)-ys*sin(angle)+x[i-1]
+        y[i]<-xs*sin(angle)+ys*cos(angle)+y[i-1]
+        cul[i]=randNr+1
+    }
+    
+    for(i in 1:nrPct)
+    {
+        
+    }
+    return(plot(y,x,col=cul,pch=19))
+    })
+    
+    output$plot<- renderPlot(chaosGame(),900,900)
+    
+}
+
+shinyApp(ui = ui, server = server)
+
